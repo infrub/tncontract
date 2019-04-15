@@ -16,9 +16,11 @@ twodim
 """
 
 from tncontract.version import __version__
-from tncontract.tensor import *
+import tncontract.eksp as eksp
+from tncontract.tensor_core import *
+from tncontract.tensor_instant import *
 from tncontract.label import *
-import tncontract.testing
-import tncontract.matrices
-import tncontract.onedim
-import tncontract.twodim
+import tncontract.matrices as matrices
+import tncontract.eiglib as eiglib
+import tncontract.onedim as onedim
+import tncontract.varopt as varopt
