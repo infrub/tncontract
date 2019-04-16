@@ -1,9 +1,13 @@
 import sys
 sys.path.append('../')
 
-from tncontract.eksp import xp as xp
-from math import sqrt
+from tncontract.tnxp import xp as xp
 from tncontract import tensor_instant as tni
+from math import sqrt
+import logging as _logging
+logger = _logging.getLogger("tncontract")
+
+
 
 
 def checkNewEigIsBetter(initL, bestL, which):
@@ -18,7 +22,12 @@ def checkNewEigIsBetter(initL, bestL, which):
 	elif which=="SM":
 		return abs(bestL)<=abs(initL)
 
-def getFarrestEig_byPower(opKet_Ket, sca_ConjKet_Ket, conjKet_Ket, norm_Ket, initRatio=None, initKet=None, origin=None, maxRepeatTurnl=30, relativeTolerance=1e-6, printer=(lambda *x: 0)):
+
+
+
+def getFarrestEig_byPower(opKet_Ket, sca_ConjKet_Ket, conjKet_Ket, norm_Ket, initRatio=None, initKet=None, origin=None, maxRepeatTurnl=30, relativeTolerance=1e-6):
+	logger.log(6, "getFarrestEig_byPower start.")
+
 	if initRatio is None:
 		initRatio = 0
 	if initKet is None:
@@ -44,15 +53,15 @@ def getFarrestEig_byPower(opKet_Ket, sca_ConjKet_Ket, conjKet_Ket, norm_Ket, ini
 		newKet = newKet / norm_Ket(newKet)
 
 		if abs(oldRatio-newRatio)<=abs(newRatio*relativeTolerance):
-			printer(11, "getFarrestEig_byPower relativeTolerance reached. break.")
+			logger.log(6, "getFarrestEig_byPower break. relativeTolerance reached.")
 			break
 
 		if oldRatio==newRatio:
-			printer(11, "getFarrestEig_byPower no more opt. break.")
+			logger.log(6, "getFarrestEig_byPower break. no more opt.")
 			break
 
 	repeatTurnl = repeatTurni + 1
-	printer(11, "\n\ngetFarrestEig_byPower done.\nrepeatTurnl == "+str(repeatTurnl))
+	logger.log(6, f"getFarrestEig_byPower done. repeatTurnl == {repeatTurnl}")
 
 	if not origin is None:
 		newRatio = newRatio + origin
@@ -60,81 +69,101 @@ def getFarrestEig_byPower(opKet_Ket, sca_ConjKet_Ket, conjKet_Ket, norm_Ket, ini
 	return newRatio, newKet
 
 
+def getBestEig_byPower(opKet_Ket, sca_ConjKet_Ket, conjKet_Ket, norm_Ket, initRatio, initKet, randomKet_Ket, which="LM", maxRepeatTurnl=30, relativeTolerance=1e-6):
+	logger.log(6, "getBestEig_byPower start.")
 
-def getBestEig_byPower(opKet_Ket, sca_ConjKet_Ket, conjKet_Ket, norm_Ket, initRatio, initKet, randomKet_Ket, which="LM", maxRepeatTurnl=30, relativeTolerance=1e-6, printer=(lambda *x: 0)):
 	randomKet = randomKet_Ket(initKet)
 
 	if which=="LM":
-		bestRatio, bestKet = getFarrestEig_byPower(opKet_Ket, sca_ConjKet_Ket, conjKet_Ket, norm_Ket, initRatio, initKet, maxRepeatTurnl=maxRepeatTurnl, relativeTolerance=relativeTolerance, printer=printer)
+		bestRatio, bestKet = getFarrestEig_byPower(opKet_Ket, sca_ConjKet_Ket, conjKet_Ket, norm_Ket, initRatio, initKet, maxRepeatTurnl=maxRepeatTurnl, relativeTolerance=relativeTolerance)
 
 	elif which=="LA":
-		largestRatio, largestKet = getFarrestEig_byPower(opKet_Ket, sca_ConjKet_Ket, conjKet_Ket, norm_Ket, initRatio=None, initKet=randomKet, maxRepeatTurnl=int(maxRepeatTurnl/3), relativeTolerance=1e-2, printer=printer)
+		largestRatio, largestKet = getFarrestEig_byPower(opKet_Ket, sca_ConjKet_Ket, conjKet_Ket, norm_Ket, initRatio=None, initKet=randomKet, maxRepeatTurnl=int(maxRepeatTurnl/3), relativeTolerance=1e-2)
 		if largestRatio>=0:
-			bestRatio, bestKet = getFarrestEig_byPower(opKet_Ket, sca_ConjKet_Ket, conjKet_Ket, norm_Ket, initRatio, initKet, maxRepeatTurnl=maxRepeatTurnl, relativeTolerance=relativeTolerance, printer=printer)
+			bestRatio, bestKet = getFarrestEig_byPower(opKet_Ket, sca_ConjKet_Ket, conjKet_Ket, norm_Ket, initRatio, initKet, maxRepeatTurnl=maxRepeatTurnl, relativeTolerance=relativeTolerance)
 		else:
-			bestRatio, bestKet = getFarrestEig_byPower(opKet_Ket, sca_ConjKet_Ket, conjKet_Ket, norm_Ket, initRatio, initKet, origin=largestRatio, maxRepeatTurnl=maxRepeatTurnl, relativeTolerance=relativeTolerance, printer=printer)
+			bestRatio, bestKet = getFarrestEig_byPower(opKet_Ket, sca_ConjKet_Ket, conjKet_Ket, norm_Ket, initRatio, initKet, origin=largestRatio, maxRepeatTurnl=maxRepeatTurnl, relativeTolerance=relativeTolerance)
 
 	elif which=="SA":
-		largestRatio, largestKet = getFarrestEig_byPower(opKet_Ket, sca_ConjKet_Ket, conjKet_Ket, norm_Ket, initRatio=None, initKet=randomKet, maxRepeatTurnl=int(maxRepeatTurnl/3), relativeTolerance=1e-2, printer=printer)
+		largestRatio, largestKet = getFarrestEig_byPower(opKet_Ket, sca_ConjKet_Ket, conjKet_Ket, norm_Ket, initRatio=None, initKet=randomKet, maxRepeatTurnl=int(maxRepeatTurnl/3), relativeTolerance=1e-2)
 		if largestRatio<=0:
-			bestRatio, bestKet = getFarrestEig_byPower(opKet_Ket, sca_ConjKet_Ket, conjKet_Ket, norm_Ket, initRatio, initKet, maxRepeatTurnl=maxRepeatTurnl, relativeTolerance=relativeTolerance, printer=printer)
+			bestRatio, bestKet = getFarrestEig_byPower(opKet_Ket, sca_ConjKet_Ket, conjKet_Ket, norm_Ket, initRatio, initKet, maxRepeatTurnl=maxRepeatTurnl, relativeTolerance=relativeTolerance)
 		else:
-			bestRatio, bestKet = getFarrestEig_byPower(opKet_Ket, sca_ConjKet_Ket, conjKet_Ket, norm_Ket, initRatio, initKet, origin=largestRatio, maxRepeatTurnl=maxRepeatTurnl, relativeTolerance=relativeTolerance, printer=printer)
+			bestRatio, bestKet = getFarrestEig_byPower(opKet_Ket, sca_ConjKet_Ket, conjKet_Ket, norm_Ket, initRatio, initKet, origin=largestRatio, maxRepeatTurnl=maxRepeatTurnl, relativeTolerance=relativeTolerance)
 
 	else:
 		return NotImplemented
 
 	if not checkNewEigIsBetter(initRatio, bestRatio, which):
-		printer(1, "initL is better than bestL.\ninitL={0}, bestL={1}\nso skipped.".format(initRatio, bestRatio))
+		logger.log(8, f"getBestEig_byPower skipped. initL is better than bestL. initL={initRatio}, bestL={bestRatio}.")
 		return initRatio, initKet
 
+	logger.log(6, f"getBestEig_byPower done.")
 	return bestRatio, bestKet
 
 
+def getBestEigVec_byMatPower(opMat, initRatio, initKetVec, which="LM", maxRepeatTurnl=30, relativeTolerance=1e-6):
+	logger.log(6, "getBestEigVec_byMatPower start.")
 
-def getBestEigVec_byMatPower(opMat, initRatio, initKetVec, which="LM", maxRepeatTurnl=30, relativeTolerance=1e-6, printer=(lambda *x: 0)):
 	opKet_Ket = lambda ketVec: xp.dot(opMat, ketVec)
 	sca_ConjKet_Ket = lambda conjKet, ket: xp.dot(conjKet, ket).real
 	conjKet_Ket = xp.conj
 	norm_Ket = xp.linalg.norm
 	randomKet_Ket = lambda ketVec: xp.random.random(*ketVec.shape)
-	return getBestEig_byPower(opKet_Ket, sca_ConjKet_Ket, conjKet_Ket, norm_Ket, initRatio, initKetVec, randomKet_Ket, which=which, maxRepeatTurnl=maxRepeatTurnl, relativeTolerance=relativeTolerance, printer=printer)
 
-def getBestEigTen_byMatPower(opMat, ketTen_KetVec, ketVec_KetTen, initRatio, initKetTen, which="LM", maxRepeatTurnl=30, relativeTolerance=1e-6, printer=(lambda *x: 0)):
+	logger.log(6, "getBestEigVec_byMatPower done.")
+	return getBestEig_byPower(opKet_Ket, sca_ConjKet_Ket, conjKet_Ket, norm_Ket, initRatio, initKetVec, randomKet_Ket, which=which, maxRepeatTurnl=maxRepeatTurnl, relativeTolerance=relativeTolerance)
+
+
+def getBestEigTen_byMatPower(opMat, ketTen_KetVec, ketVec_KetTen, initRatio, initKetTen, which="LM", maxRepeatTurnl=30, relativeTolerance=1e-6):
+	logger.log(6, "getBestEigTen_byMatPower start.")
+
 	initKetVec = ketVec_KetTen(initKetTen)
-	bestRatio, bestKetVec = getBestEigVec_byMatPower(opMat, initRatio, initKetVec, which=which, maxRepeatTurnl=30, relativeTolerance=1e-6, printer=printer)
+	bestRatio, bestKetVec = getBestEigVec_byMatPower(opMat, initRatio, initKetVec, which=which, maxRepeatTurnl=30, relativeTolerance=1e-6)
 	bestKetTen = ketTen_KetVec(bestKetVec)
+
+	logger.log(6, "getBestEigTen_byMatPower done.")
 	return bestRatio, bestKetTen
 
-def getBestEigTen_byTenPower(opKetTen_KetTen, sca_ConjKetTen_KetTen, initRatio, initKetTen, which="LM", maxRepeatTurnl=30, relativeTolerance=1e-6, printer=(lambda *x: 0)):
+
+def getBestEigTen_byTenPower(opKetTen_KetTen, sca_ConjKetTen_KetTen, initRatio, initKetTen, which="LM", maxRepeatTurnl=30, relativeTolerance=1e-6):
+	logger.log(6, "getBestEigTen_byTenPower start.")
+
 	conjKet_Ket = lambda ketTen: ketTen.conjugated()
 	norm_Ket = lambda ketTen: ketTen.norm()
 	randomKet_Ket = lambda ketTen: tni.random_tensor_like(ketTen)
-	return getBestEig_byPower(opKetTen_KetTen, sca_ConjKetTen_KetTen, conjKet_Ket, norm_Ket, initRatio, initKetTen, randomKet_Ket, which=which, maxRepeatTurnl=maxRepeatTurnl, relativeTolerance=relativeTolerance, printer=printer)
+
+	logger.log(6, "getBestEigTen_byTenPower done.")
+	return getBestEig_byPower(opKetTen_KetTen, sca_ConjKetTen_KetTen, conjKet_Ket, norm_Ket, initRatio, initKetTen, randomKet_Ket, which=which, maxRepeatTurnl=maxRepeatTurnl, relativeTolerance=relativeTolerance)
 
 
 
 
-def getBestEigVec_byMatEigsh(opMat, initRatio, initKetVec=None, which="LM", relativeTolerance=1e-6, printer=(lambda *x: 0)):
+def getBestEigVec_byMatEigsh(opMat, initRatio, initKetVec=None, which="LM", relativeTolerance=1e-6):
+	logger.log(6, "getBestEigVec_byMatEigsh start.")
+
 	if xp.isCupy:
 		raise Exception("MatEigsh can work only when xp==scipy")
 
 	dim = opMat.shape[0]
 	if dim<=2:
-		return getBestEigVec_byMatEigh(opMat, initRatio, initKetVec, which=which, printer=printer)
+		return getBestEigVec_byMatEigh(opMat, initRatio, initKetVec, which=which)
 
 	Ls, Vs = xp.sparse.linalg.eigsh(opMat, k=1, v0=initKetVec, which=which, tol=relativeTolerance)
 	bestRatio = Ls[0]
 	bestKetVec = Vs[:,0]
 
 	if not checkNewEigIsBetter(initRatio, bestRatio, which):
-		printer(1, "initL is better than bestL.\ninitL={0}, bestL={1}\nso skipped.".format(initRatio, bestRatio))
+		logger.log(8, f"getBestEigVec_byMatEigsh skipped. initL is better than bestL. initL={initRatio}, bestL={bestRatio}")
 		return initRatio, initKetVec
 
+	logger.log(6, "getBestEigVec_byMatEigsh done.")
 	return bestRatio, bestKetVec
 
 
-def getBestEigTen_byMatEigsh(opMat, ketTen_KetVec, ketVec_KetTen, initRatio=None, initKetTen=None, which="LM", relativeTolerance=1e-6, printer=(lambda *x: 0)):
+def getBestEigTen_byMatEigsh(opMat, ketTen_KetVec, ketVec_KetTen, initRatio=None, initKetTen=None, which="LM", relativeTolerance=1e-6):
+	logger.log(6, "getBestEigTen_byMatEigsh start.")
+
 	if xp.isCupy:
 		raise Exception("MatEigsh can work only when xp==scipy")
 
@@ -142,15 +171,19 @@ def getBestEigTen_byMatEigsh(opMat, ketTen_KetVec, ketVec_KetTen, initRatio=None
 		initKetVec = None
 	else:
 		initKetVec = ketVec_KetTen(initKetTen)
-	bestRatio, bestKetVec = getBestEigVec_byMatEigsh(opMat, initRatio, initKetVec, which, relativeTolerance=relativeTolerance, printer=printer)
+	bestRatio, bestKetVec = getBestEigVec_byMatEigsh(opMat, initRatio, initKetVec, which, relativeTolerance=relativeTolerance)
 	if bestKetVec is None:
 		bestKetTen = None
 	else:
 		bestKetTen = ketTen_KetVec(bestKetVec)
+
+	logger.log(6, "getBestEigTen_byMatEigsh done.")
 	return bestRatio, bestKetTen
 
 
-def getBestEigTen_byTenEigsh(opKetTen_KetTen, ketTen_KetVec, ketVec_KetTen, initRatio, initKetTen, which="LM", relativeTolerance=1e-6, printer=(lambda *x: 0)):
+def getBestEigTen_byTenEigsh(opKetTen_KetTen, ketTen_KetVec, ketVec_KetTen, initRatio, initKetTen, which="LM", relativeTolerance=1e-6):
+	logger.log(6, "getBestEigTen_byTenEigsh start.")
+
 	if xp.isCupy:
 		raise Exception("TenEigsh can work only when xp==scipy")
 
@@ -164,10 +197,11 @@ def getBestEigTen_byTenEigsh(opKetTen_KetTen, ketTen_KetVec, ketVec_KetTen, init
 
 	opMat = xp.sparse.linalg.LinearOperator(shape=(initKetVec.shape[0], initKetVec.shape[0]), dtype=initKetVec.dtype, matvec=opKetVec_KetVec)
 
-	bestRatio, bestKetVec = getBestEigVec_byMatEigsh(opMat, initRatio, initKetVec, which, relativeTolerance=relativeTolerance, printer=printer)
+	bestRatio, bestKetVec = getBestEigVec_byMatEigsh(opMat, initRatio, initKetVec, which, relativeTolerance=relativeTolerance)
 
 	bestKetTen = ketTen_KetVec(bestKetVec)
 
+	logger.log(6, "getBestEigTen_byTenEigsh done.")
 	return bestRatio, bestKetTen
 
 
@@ -208,20 +242,28 @@ def getBestLi_fromAscendingLs(Ls, which):
 	#print("bestL:", Ls[bestLi])
 	return bestLi
 
-def getBestEigVec_byMatEigh(opMat, initRatio=None, initKetVec=None, which="LM", printer=(lambda *x: 0)):
+
+
+
+def getBestEigVec_byMatEigh(opMat, initRatio=None, initKetVec=None, which="LM"):
+	logger.log(6, "getBestEigVec_byMatEigh start.")
+
 	Ls, Vs = xp.linalg.eigh(opMat)
 	bestLi = getBestLi_fromAscendingLs(Ls, which=which)
 	bestRatio = Ls[bestLi]
 	bestKetVec = Vs[:,bestLi]
 
 	if not checkNewEigIsBetter(initRatio, bestRatio, which):
-		printer(1, "initL is better than bestL.\ninitRatio={0}, bestRatio={1}\nso skipped.".format(initRatio, bestRatio))
+		logger.log(8, "getBestEigVec_byMatEigh skipped. initL is better than bestL. initRatio={initRatio}, bestRatio={bestRatio}.")
 		return initRatio, initKetVec
 
+	logger.log(6, "getBestEigVec_byMatEigh done.")
 	return bestRatio, bestKetVec
 
 
-def getBestEigTen_byMatEigh(opMat, ketTen_KetVec, ketVec_KetTen, initRatio=None, initKetTen=None, which="LM", printer=(lambda *x: 0)):
+def getBestEigTen_byMatEigh(opMat, ketTen_KetVec, ketVec_KetTen, initRatio=None, initKetTen=None, which="LM"):
+	logger.log(6, "getBestEigTen_byMatEigh start.")
+
 	if xp.isScipy:
 		if isinstance(opMat, xp.sparse.linalg.LinearOperator):
 			opMat = matrix_LinearOperator(opMat)
@@ -230,9 +272,11 @@ def getBestEigTen_byMatEigh(opMat, ketTen_KetVec, ketVec_KetTen, initRatio=None,
 		initKetVec = None
 	else:
 		initKetVec = ketVec_KetTen(initKetTen)
-	bestRatio, bestKetVec = getBestEigVec_byMatEigh(opMat, initRatio, initKetVec, which, printer=printer)
+	bestRatio, bestKetVec = getBestEigVec_byMatEigh(opMat, initRatio, initKetVec, which)
 	if bestKetVec is None:
 		bestKetTen = None
 	else:
 		bestKetTen = ketTen_KetVec(bestKetVec)
+
+	logger.log(6, "getBestEigTen_byMatEigh done.")
 	return bestRatio, bestKetTen

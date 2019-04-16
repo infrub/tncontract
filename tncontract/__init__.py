@@ -16,7 +16,7 @@ twodim
 """
 
 from tncontract.version import __version__
-import tncontract.eksp as eksp
+import tncontract.tnxp as tnxp
 from tncontract.tensor_core import *
 from tncontract.tensor_instant import *
 from tncontract.label import *

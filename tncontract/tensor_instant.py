@@ -5,7 +5,7 @@ __all__ = ['random_tensor', "zeros_tensor", "identity_tensor", "zeros_tensor_lik
 
 import copy
 
-from tncontract.eksp import xp as xp
+from tncontract.tnxp import xp as xp
 from tncontract import tensor_core as tnc
 
 

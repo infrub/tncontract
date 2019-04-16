@@ -4,13 +4,15 @@ sys.path.append('../')
 from tncontract import *
 from tncontract.onedim import *
 from math import sqrt
+import logging as _logging
+logger = _logging.getLogger("tncontract")
 
 
 
 
 
 class HamiltonianCanonisingVariationalOptimizer:
-	def __init__(self, hamiltonianMpo, initStateMpsKet=None, mpsBondDims=None, which="SA", printer=(lambda *x: 0)):
+	def __init__(self, hamiltonianMpo, initStateMpsKet=None, mpsBondDims=None, which="SA"):
 		self.op_left_label = "op_left"
 		self.op_right_label = "op_right"
 		self.op_physout_label = "op_physout"
@@ -31,7 +33,6 @@ class HamiltonianCanonisingVariationalOptimizer:
 		if which=="SA": self.bestL = float("inf")
 		if which=="LM": self.bestL = float(0)
 		if which=="SM": self.bestL = float("inf")
-		self.printer = printer
 
 		hamiltonianMpo.replace_left_label(self.op_left_label)
 		hamiltonianMpo.replace_right_label(self.op_right_label)
@@ -136,7 +137,8 @@ class HamiltonianCanonisingVariationalOptimizer:
 
 
 	def oneSiteVarOpt(self,focusingSite,algorithmName="auto",**kwargs):
-		self.printer(1,"\n")
+		logger.log(14, f"varopt site={focusingSite} start.")
+
 		if algorithmName=="auto":
 			"""
 			W = int(sqrt(self.hamiltonianMpo.leftDim(focusingSite)*self.hamiltonianMpo.rightDim(focusingSite)))
@@ -147,9 +149,8 @@ class HamiltonianCanonisingVariationalOptimizer:
 				algorithmName = "MatEigh"
 			"""
 			algorithmName = "MatEigh"
-			self.printer(5,"choosed algorithmName= ",algorithmName)
+			logger.log(12, f"choosed algorithmName={algorithmName}")
 
-		self.printer(1, "optimizing site=", focusingSite)
 		self.stateMpsKet.left_canonise_up_to(focusingSite)
 		self.stateMpsKet.right_canonise_up_to(focusingSite+1)
 
@@ -191,25 +192,25 @@ class HamiltonianCanonisingVariationalOptimizer:
 			def wholeSOSKet_Ket(ket):
 				temp1 = contract(ket, leftSOSTen, [self.ket_left_label], [self.ket_right_label])
 				temp2 = contract(temp1, midOTen, [self.op_right_label, self.ket_phys_label], [self.op_left_label, self.op_physin_label])
-				temp3 = contract(temp2, rightSOSTen, [self.op_right_label, self.ket_right_label,  self.ket_left_label, self.op_left_label, self.bra_left_label], [self.op_left_label, self.ket_left_label, self.ket_right_label, self.op_right_label, self.bra_right_label])
+				temp3 = contract(temp2, rightSOSTen, [self.op_right_label, self.ket_right_label, self.ket_left_label, self.op_left_label, self.bra_left_label], [self.op_left_label, self.ket_left_label, self.ket_right_label, self.op_right_label, self.bra_right_label])
 				temp3.replace_label([self.bra_right_label, self.op_physout_label, self.bra_left_label], [self.ket_left_label, self.ket_phys_label, self.ket_right_label])
 				return temp3
 
 
 		if algorithmName == "MatEigh":
-			bestL, bestKet = eiglib.getBestEigTen_byMatEigh(wholeH, ketTen_KetVec, ketVec_KetTen, initRatio=self.bestL, initKetTen=focusingKet, which=self.which, printer=self.printer)	#O(2*p^3*D^6*rep+4*p^3*D^6)
+			bestL, bestKet = eiglib.getBestEigTen_byMatEigh(wholeH, ketTen_KetVec, ketVec_KetTen, initRatio=self.bestL, initKetTen=focusingKet, which=self.which)	#O(2*p^3*D^6*rep+4*p^3*D^6)
 
 		elif algorithmName == "MatEigsh":
-			bestL, bestKet = eiglib.getBestEigTen_byMatEigsh(wholeH, ketTen_KetVec, ketVec_KetTen, initRatio=self.bestL, initKetTen=focusingKet, which=self.which, relativeTolerance=kwargs.pop("relativeTolerance", 1e-6), printer=self.printer)
+			bestL, bestKet = eiglib.getBestEigTen_byMatEigsh(wholeH, ketTen_KetVec, ketVec_KetTen, initRatio=self.bestL, initKetTen=focusingKet, which=self.which, relativeTolerance=kwargs.pop("relativeTolerance", 1e-6))
 
 		elif algorithmName == "MatPower":
-			bestL, bestKet = eiglib.getBestEigTen_byMatPower(wholeH, ketTen_KetVec, ketVec_KetTen, initRatio=self.bestL, initKetTen=focusingKet, which=self.which, maxRepeatTurnl=kwargs.pop("maxRepeatTurnl", 30), relativeTolerance=kwargs.pop("relativeTolerance", 1e-6), printer=self.printer)
+			bestL, bestKet = eiglib.getBestEigTen_byMatPower(wholeH, ketTen_KetVec, ketVec_KetTen, initRatio=self.bestL, initKetTen=focusingKet, which=self.which, maxRepeatTurnl=kwargs.pop("maxRepeatTurnl", 30), relativeTolerance=kwargs.pop("relativeTolerance", 1e-6))
 
 		elif algorithmName == "TenEigsh":
-			bestL, bestKet = eiglib.getBestEigTen_byTenEigsh(wholeSOSKet_Ket, ketTen_KetVec, ketVec_KetTen, initRatio=self.bestL, initKetTen=focusingKet, which=self.which, relativeTolerance=kwargs.pop("relativeTolerance", 1e-6), printer=self.printer)
+			bestL, bestKet = eiglib.getBestEigTen_byTenEigsh(wholeSOSKet_Ket, ketTen_KetVec, ketVec_KetTen, initRatio=self.bestL, initKetTen=focusingKet, which=self.which, relativeTolerance=kwargs.pop("relativeTolerance", 1e-6))
 
 		elif algorithmName == "TenPower":
-			bestL, bestKet = eiglib.getBestEigTen_byTenPower(wholeSOSKet_Ket, sca_ConjKetTen_KetTen, initRatio=self.bestL, initKetTen=focusingKet, which=self.which, maxRepeatTurnl=kwargs.pop("maxRepeatTurnl", 30), relativeTolerance=kwargs.pop("relativeTolerance", 1e-6), printer=self.printer)
+			bestL, bestKet = eiglib.getBestEigTen_byTenPower(wholeSOSKet_Ket, sca_ConjKetTen_KetTen, initRatio=self.bestL, initKetTen=focusingKet, which=self.which, maxRepeatTurnl=kwargs.pop("maxRepeatTurnl", 30), relativeTolerance=kwargs.pop("relativeTolerance", 1e-6))
 
 		else:
 			return ValueError("No such algorithmName", algorithmName)
@@ -218,8 +219,7 @@ class HamiltonianCanonisingVariationalOptimizer:
 		self.bestL = bestL
 		self.setOneKet(focusingSite, bestKet)
 
-		self.printer(1,"optimized.")
-		self.printer(1,"now bestL=",self.bestL)
+		logger.log(14, f"varopt site={focusingSite} done. now bestL={self.bestL}")
 
 		return self.bestL
 
@@ -235,33 +235,37 @@ class HamiltonianCanonisingVariationalOptimizer:
 
 
 	def varOpt(self, maxSweepTurnl=30, absoluteTolerance=None, relativeTolerance=None, algorithmName="auto", **kwargs):
+		logger.log(18, f"varopt start.")
+
 		for sweepTurni in range(maxSweepTurnl):
-			self.printer(1, "\n\nsweepTurni=", sweepTurni)
+			logger.log(16, f"varopt sweepTurni={sweepTurni} start.")
 			previousBestL=self.bestL
 			bestL = self.oneSweepVarOpt(algorithmName=algorithmName, **kwargs)
+			logger.log(16, f"varopt sweepTurni={sweepTurni} done.")
+
 			if absoluteTolerance is not None:
 				if self.which=="SA" and bestL<=absoluteTolerance:
-					self.printer(1, "\nabsoluteTolerance reached. break.")
+					logger.log(18, "varopt break. absoluteTolerance reached.")
 					break
 				elif self.which=="LA" and bestL>=absoluteTolerance:
-					self.printer(1, "\nabsoluteTolerance reached. break.")
+					logger.log(18, "varopt break. absoluteTolerance reached.")
 					break
 				elif self.which=="SM" and abs(bestL)<=absoluteTolerance:
-					self.printer(1, "\nabsoluteTolerance reached. break.")
+					logger.log(18, "varopt break. absoluteTolerance reached.")
 					break
 				elif self.which=="LM" and abs(bestL)>=absoluteTolerance:
-					self.printer(1, "\nabsoluteTolerance reached. break.")
+					logger.log(18, "varopt break. absoluteTolerance reached.")
 					break
 			if relativeTolerance is not None:
 				#print("bestL",bestL)
 				#print("previousBestL",previousBestL)
 				if abs(bestL-previousBestL)<=abs(relativeTolerance*bestL):
-					self.printer(1, "\nrelativeTolerance reached. break.")
+					logger.log(18, "varopt break. relativeTolerance reached.")
 					break
 			if bestL==previousBestL:
-				self.printer(1, "\nno more opt. break.")
+				logger.log(18, "varopt break. no more opt.")
 				break
 
 		sweepTurnl = sweepTurni+1
-		self.printer(1, "\n\nvaropt done.\nsweepTurnl == "+str(sweepTurnl))
+		logger.log(18, f"varopt done. sweepTurnl == {sweepTurnl}")
 		return bestL, sweepTurnl

@@ -8,7 +8,7 @@ __all__ = ['Tensor', 'contract', 'tensor_product', "directSumTensor", 'matrix_to
 import copy as copyModule
 import warnings
 import numpy
-from tncontract.eksp import xp as xp
+from tncontract.tnxp import xp as xp
 from tncontract import label as lbl
 
 
